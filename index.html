@@ -29,21 +29,21 @@
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
             <div class="text-center">
                 <h1 class="text-3xl md:text-4xl font-bold text-green-700 mb-2">
-                    <i class="fas fa-moon-stars mr-2"></i>Ramadan Porridge Distribution
+                    <i class="fas fa-moon mr-2"></i>Ramadan Porridge Distribution
                 </h1>
-                <p class="text-gray-600">Track and manage porridge distribution efficiently</p>
+                <p class="text-gray-600">Track and manage porridge distribution with QR codes</p>
             </div>
         </div>
 
         <!-- Scanner Section -->
         <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">
-                <i class="fas fa-barcode mr-2"></i>Scan Membership Card
+                <i class="fas fa-qrcode mr-2"></i>Scan Membership QR Code
             </h2>
             
             <div class="mb-4">
                 <button id="startScanBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
-                    <i class="fas fa-camera mr-2"></i>Start Camera Scanner
+                    <i class="fas fa-camera mr-2"></i>Start QR Code Scanner
                 </button>
             </div>
 
@@ -53,7 +53,7 @@
                 <label class="block text-gray-700 font-semibold mb-2">Membership Number:</label>
                 <input type="text" id="membershipInput" 
                     class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-green-500 focus:outline-none text-lg"
-                    placeholder="Scan barcode or enter manually">
+                    placeholder="Scan QR code or enter manually">
             </div>
 
             <button id="manualSubmitBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300">
@@ -265,17 +265,7 @@
                 {
                     fps: 10,
                     qrbox: { width: 250, height: 250 },
-                    formatsToSupport: [
-                        Html5QrcodeSupportedFormats.QR_CODE,
-                        Html5QrcodeSupportedFormats.CODE_128,
-                        Html5QrcodeSupportedFormats.CODE_39,
-                        Html5QrcodeSupportedFormats.EAN_13,
-                        Html5QrcodeSupportedFormats.EAN_8,
-                        Html5QrcodeSupportedFormats.UPC_A,
-                        Html5QrcodeSupportedFormats.UPC_E,
-                        Html5QrcodeSupportedFormats.CODE_93,
-                        Html5QrcodeSupportedFormats.CODABAR
-                    ]
+                    formatsToSupport: [0] // 0 = QR_CODE only
                 },
                 (decodedText) => {
                     document.getElementById('membershipInput').value = decodedText;
@@ -284,7 +274,7 @@
                     html5QrCode.stop().then(() => {
                         readerDiv.classList.add('hidden');
                         isScanning = false;
-                        document.getElementById('startScanBtn').innerHTML = '<i class="fas fa-camera mr-2"></i>Start Camera Scanner';
+                        document.getElementById('startScanBtn').innerHTML = '<i class="fas fa-camera mr-2"></i>Start QR Code Scanner';
                         document.getElementById('startScanBtn').classList.remove('bg-red-600', 'hover:bg-red-700');
                         document.getElementById('startScanBtn').classList.add('bg-green-600', 'hover:bg-green-700');
                     });
