@@ -17,15 +17,9 @@
         }
         .number-btn {
             transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
         .number-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
-        }
-        .number-btn:active {
-            transform: translateY(0);
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transform: scale(1.05);
         }
     </style>
 </head>
@@ -80,23 +74,21 @@
         </div>
 
         <!-- Records Table -->
-        <div class="bg-white rounded-lg shadow-lg p-4 md:p-6">
+        <div class="bg-white rounded-lg shadow-lg p-6">
             <h2 class="text-2xl font-bold text-gray-800 mb-4">
                 <i class="fas fa-list mr-2"></i>Distribution Records (<span id="recordCount">0</span>)
             </h2>
-            
-            <!-- Desktop Table View -->
-            <div class="hidden md:block overflow-x-auto">
+            <div class="overflow-x-auto">
                 <table class="w-full">
                     <thead class="bg-green-600 text-white">
                         <tr>
-                            <th class="px-4 py-3 text-left rounded-tl-lg">#</th>
+                            <th class="px-4 py-3 text-left">#</th>
                             <th class="px-4 py-3 text-left">Membership No.</th>
                             <th class="px-4 py-3 text-left">Family Count</th>
-                            <th class="px-4 py-3 text-left rounded-tr-lg">Time Issued</th>
+                            <th class="px-4 py-3 text-left">Time Issued</th>
                         </tr>
                     </thead>
-                    <tbody id="recordsTableDesktop" class="divide-y divide-gray-200">
+                    <tbody id="recordsTable" class="divide-y divide-gray-200">
                         <tr>
                             <td colspan="4" class="px-4 py-8 text-center text-gray-500">
                                 <i class="fas fa-inbox text-4xl mb-2"></i>
@@ -105,14 +97,6 @@
                         </tr>
                     </tbody>
                 </table>
-            </div>
-
-            <!-- Mobile Card View -->
-            <div id="recordsTableMobile" class="md:hidden space-y-3">
-                <div class="text-center py-12 text-gray-500">
-                    <i class="fas fa-inbox text-4xl mb-3"></i>
-                    <p>No records yet. Start scanning to add distributions.</p>
-                </div>
             </div>
         </div>
     </div>
@@ -148,15 +132,13 @@
 
         // Update table display
         function updateTable() {
-            const tbodyDesktop = document.getElementById('recordsTableDesktop');
-            const mobileView = document.getElementById('recordsTableMobile');
+            const tbody = document.getElementById('recordsTable');
             const countSpan = document.getElementById('recordCount');
             
             countSpan.textContent = records.length;
 
             if (records.length === 0) {
-                // Desktop empty state
-                tbodyDesktop.innerHTML = `
+                tbody.innerHTML = `
                     <tr>
                         <td colspan="4" class="px-4 py-8 text-center text-gray-500">
                             <i class="fas fa-inbox text-4xl mb-2"></i>
@@ -164,19 +146,10 @@
                         </td>
                     </tr>
                 `;
-                
-                // Mobile empty state
-                mobileView.innerHTML = `
-                    <div class="text-center py-12 text-gray-500">
-                        <i class="fas fa-inbox text-4xl mb-3"></i>
-                        <p>No records yet. Start scanning to add distributions.</p>
-                    </div>
-                `;
                 return;
             }
 
-            // Desktop table view
-            tbodyDesktop.innerHTML = records.map((record, index) => `
+            tbody.innerHTML = records.map((record, index) => `
                 <tr class="hover:bg-gray-50 transition duration-150">
                     <td class="px-4 py-3 font-semibold text-gray-700">${index + 1}</td>
                     <td class="px-4 py-3 font-mono text-blue-600">${record.membershipNo}</td>
@@ -189,34 +162,6 @@
                         <i class="fas fa-clock mr-1"></i>${formatTime(record.timestamp)}
                     </td>
                 </tr>
-            `).join('');
-
-            // Mobile card view
-            mobileView.innerHTML = records.map((record, index) => `
-                <div class="bg-gradient-to-r from-green-50 to-blue-50 rounded-lg p-4 border-l-4 border-green-500 shadow-sm">
-                    <div class="flex items-start justify-between mb-3">
-                        <div class="flex-1">
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded">
-                                    #${index + 1}
-                                </span>
-                                <span class="text-xs text-gray-500">
-                                    <i class="fas fa-clock mr-1"></i>${formatTime(record.timestamp)}
-                                </span>
-                            </div>
-                            <div class="mb-2">
-                                <p class="text-xs text-gray-600 mb-1">Membership Number</p>
-                                <p class="font-mono text-lg font-bold text-blue-600">${record.membershipNo}</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between pt-2 border-t border-gray-200">
-                        <span class="text-sm text-gray-600">Family Members</span>
-                        <span class="bg-green-500 text-white px-4 py-2 rounded-full font-bold text-lg">
-                            <i class="fas fa-users mr-1"></i>${record.familyCount}
-                        </span>
-                    </div>
-                </div>
             `).join('');
         }
 
@@ -246,41 +191,30 @@
                 return;
             }
 
-            // Create number buttons HTML with better styling
+            // Create number buttons HTML
             const buttonsHtml = Array.from({length: 10}, (_, i) => i + 1).map(num => `
-                <button class="number-btn bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-6 px-4 rounded-xl text-2xl transition-all duration-300" 
+                <button class="number-btn bg-green-500 hover:bg-green-600 text-white font-bold py-4 px-6 rounded-lg text-xl m-1" 
                         onclick="saveMember('${membershipNo}', ${num})">
                     ${num}
                 </button>
             `).join('');
 
             Swal.fire({
-                title: '<i class="fas fa-users text-green-600"></i> Select Family Members',
+                title: 'Select Family Members Count',
                 html: `
-                    <div class="text-center mb-6">
-                        <div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4 rounded">
-                            <p class="text-sm text-gray-600 mb-1">Membership Number</p>
-                            <p class="text-xl font-mono font-bold text-blue-600">${membershipNo}</p>
-                        </div>
-                        <p class="text-gray-600 mb-4">
-                            <i class="fas fa-hand-pointer text-green-500 mr-2"></i>
-                            Tap the number of family members
-                        </p>
+                    <div class="text-center mb-4">
+                        <p class="text-gray-600 mb-2">Membership No: <strong class="text-blue-600">${membershipNo}</strong></p>
+                        <p class="text-sm text-gray-500">Click the number of family members:</p>
                     </div>
-                    <div class="grid grid-cols-5 gap-3 max-w-2xl mx-auto px-2">
+                    <div class="grid grid-cols-5 gap-2 max-w-md mx-auto">
                         ${buttonsHtml}
                     </div>
                 `,
                 showConfirmButton: false,
                 showCancelButton: true,
-                cancelButtonText: '<i class="fas fa-times mr-2"></i>Cancel',
+                cancelButtonText: 'Cancel',
                 cancelButtonColor: '#6b7280',
-                width: '700px',
-                padding: '2em',
-                customClass: {
-                    popup: 'rounded-2xl',
-                    title: 'text-2xl'
-                }
+                width: '600px'
             });
         }
 
