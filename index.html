@@ -248,7 +248,7 @@
 
             // Create number buttons HTML with better styling
             const buttonsHtml = Array.from({length: 10}, (_, i) => i + 1).map(num => `
-                <button class="number-btn bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold py-6 px-4 rounded-xl text-2xl transition-all duration-300" 
+                <button class="number-btn bg-gradient-to-br from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-lg text-base sm:text-lg transition-all duration-300 aspect-square flex items-center justify-center w-full" 
                         onclick="saveMember('${membershipNo}', ${num})">
                     ${num}
                 </button>
@@ -267,7 +267,7 @@
                             Tap the number of family members
                         </p>
                     </div>
-                    <div class="grid grid-cols-5 gap-3 max-w-2xl mx-auto px-2">
+                    <div class="grid grid-cols-5 gap-2 sm:gap-3 max-w-2xl mx-auto px-2">
                         ${buttonsHtml}
                     </div>
                 `,
