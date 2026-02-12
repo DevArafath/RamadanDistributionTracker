@@ -105,7 +105,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             
             <!-- Porridge Distribution Card - Active -->
-            <div class="card-hover bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-green-500 cursor-pointer" onclick="navigateTo('porridge_distribution.html')">
+            <div class="card-hover bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-green-500 cursor-pointer" onclick="navigateTo('porridge-distribution.html')">
                 <div class="bg-gradient-to-br from-green-500 to-green-600 p-6 text-white">
                     <div class="flex items-center justify-between mb-3">
                         <div class="w-14 h-14 bg-white bg-opacity-20 rounded-full flex items-center justify-center backdrop-blur-sm">
@@ -135,6 +135,43 @@
                             <span id="porridgeCount">0</span> / 450
                         </span>
                         <button class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-semibold transition duration-300">
+                            Open <i class="fas fa-arrow-right ml-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cash Distribution Card - Active -->
+            <div class="card-hover bg-white rounded-2xl shadow-lg overflow-hidden border-2 border-orange-500 cursor-pointer" onclick="navigateTo('cash-distribution.html')">
+                <div class="bg-gradient-to-br from-orange-500 to-orange-600 p-6 text-white">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="w-14 h-14 bg-white bg-opacity-20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                            <i class="fas fa-hand-holding-dollar text-3xl"></i>
+                        </div>
+                        <span class="bg-white bg-opacity-30 px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm">
+                            ACTIVE
+                        </span>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-2">Cash Distribution</h3>
+                    <p class="text-orange-100 text-sm">Financial assistance and cash aid program</p>
+                </div>
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center text-gray-600">
+                            <i class="fas fa-chart-pie mr-2 text-orange-600"></i>
+                            <span class="text-sm font-semibold">Progress</span>
+                        </div>
+                        <span class="text-sm font-bold text-orange-600" id="cashProgress">0%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden mb-4">
+                        <div id="cashBar" class="bg-gradient-to-r from-orange-500 to-orange-600 h-3 rounded-full transition-all duration-500" style="width: 0%"></div>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-600">
+                            <i class="fas fa-money-bill mr-1"></i>
+                            <span id="cashCount">0</span> distributed
+                        </span>
+                        <button class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-semibold transition duration-300">
                             Open <i class="fas fa-arrow-right ml-1"></i>
                         </button>
                     </div>
@@ -291,17 +328,40 @@
 
         // Load porridge distribution stats
         function loadStats() {
-            const records = JSON.parse(localStorage.getItem('porridgeRecords') || '[]');
-            const count = records.length;
-            const total = 450;
-            const percentage = Math.round((count / total) * 100);
-            const remaining = total - count;
+            // Porridge stats
+            const porridgeRecords = JSON.parse(localStorage.getItem('porridgeRecords') || '[]');
+            const porridgeCount = porridgeRecords.length;
+            const porridgeTotal = 450;
+            const porridgePercentage = Math.round((porridgeCount / porridgeTotal) * 100);
 
-            document.getElementById('distributedCount').textContent = count;
-            document.getElementById('remainingCount').textContent = remaining;
-            document.getElementById('porridgeCount').textContent = count;
-            document.getElementById('porridgeProgress').textContent = percentage + '%';
-            document.getElementById('porridgeBar').style.width = percentage + '%';
+            document.getElementById('porridgeCount').textContent = porridgeCount;
+            document.getElementById('porridgeProgress').textContent = porridgePercentage + '%';
+            document.getElementById('porridgeBar').style.width = porridgePercentage + '%';
+
+            // Cash distribution stats
+            const cashRecords = JSON.parse(localStorage.getItem('cashRecords') || '[]');
+            const cashConfig = JSON.parse(localStorage.getItem('cashConfig') || 'null');
+            const cashCount = cashRecords.length;
+            
+            if (cashConfig) {
+                const cashTotal = cashConfig.totalFamilies;
+                const cashPercentage = Math.round((cashCount / cashTotal) * 100);
+                
+                document.getElementById('cashCount').textContent = cashCount;
+                document.getElementById('cashProgress').textContent = cashPercentage + '%';
+                document.getElementById('cashBar').style.width = cashPercentage + '%';
+            } else {
+                document.getElementById('cashCount').textContent = '0';
+                document.getElementById('cashProgress').textContent = '0%';
+                document.getElementById('cashBar').style.width = '0%';
+            }
+
+            // Update overall stats
+            const totalDistributed = porridgeCount + cashCount;
+            const totalRemaining = porridgeTotal - porridgeCount; // Based on porridge total for now
+            
+            document.getElementById('distributedCount').textContent = totalDistributed;
+            document.getElementById('remainingCount').textContent = totalRemaining;
         }
 
         // Navigate to distribution page
