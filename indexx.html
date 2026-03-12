@@ -43,47 +43,70 @@
 
     <script>
         let html5QrCode;
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
 
         function initScanner() {
-            // User gesture triggered this
             html5QrCode = new Html5Qrcode("reader");
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            startScanning();
+        }
 
-            // facingMode: "environment" forces the back camera
+        function startScanning() {
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+            
             html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
                 .then(() => {
-                    document.getElementById('startBtn').classList.add('hidden');
+                    startBtn.classList.add('hidden');
                 })
                 .catch(err => {
-                    Swal.fire('Camera Error', 'Make sure you are using HTTPS and have granted permissions.', 'error');
+                    console.error("Camera Error:", err);
+                    Swal.fire('Camera Error', 'Please check permissions and use HTTPS.', 'error');
                 });
         }
 
-        function onScanSuccess(decodedText) {
+        async function onScanSuccess(decodedText) {
+            // 1. Immediately pause/stop the scanner to prevent multiple triggers
+            try {
+                await html5QrCode.stop();
+            } catch (err) {
+                console.warn("Scanner stop failed", err);
+            }
+
             let data = JSON.parse(localStorage.getItem('member_db')) || [];
-            
-            // Check for duplicate
             const exists = data.find(m => m.id === decodedText);
+
             if (exists) {
-                Swal.fire({
+                await Swal.fire({
                     icon: 'warning',
                     title: 'Already Issued',
                     text: `Card ${decodedText} was issued on ${exists.timestamp}`,
+                    confirmButtonText: 'Scan Next',
                     confirmButtonColor: '#4f46e5'
                 });
-                return;
+            } else {
+                // Save Entry
+                const entry = {
+                    id: decodedText,
+                    timestamp: new Date().toLocaleString()
+                };
+                data.push(entry);
+                localStorage.setItem('member_db', JSON.stringify(data));
+                updateLog();
+
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Card Registered',
+                    text: `ID: ${decodedText}`,
+                    confirmButtonText: 'Scan Next',
+                    confirmButtonColor: '#10b981'
+                });
             }
 
-            // Save Entry
-            const entry = {
-                id: decodedText,
-                timestamp: new Date().toLocaleString()
-            };
-            data.push(entry);
-            localStorage.setItem('member_db', JSON.stringify(data));
-            
-            updateLog();
-            Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Member Added', showConfirmButton: false, timer: 1500 });
+            // 2. Show the "Start Camera" button again or auto-resume
+            // Here we make the button visible again so the user controls when to scan the next card
+            startBtn.innerText = "Scan Next Card";
+            startBtn.classList.remove('hidden');
+            startBtn.classList.replace('bg-indigo-600', 'bg-blue-500');
         }
 
         function updateLog() {
@@ -108,9 +131,8 @@
             const fName = `Membership_List_${Date.now()}.xlsx`;
             XLSX.writeFile(wb, fName);
 
-            // WhatsApp link (Browser requires manual file attachment)
-            window.open(`https://wa.me/?text=Membership Export: ${fName}`, '_blank');
-            document.getElementById('resetBtn').classList.remove('hidden');
+            window.open(`https://wa.me/?text=Membership Export Attached: ${fName}`, '_blank');
+            resetBtn.classList.remove('hidden');
         }
 
         function clearStorage() {
@@ -125,12 +147,11 @@
                 if (res.isConfirmed) {
                     localStorage.removeItem('member_db');
                     updateLog();
-                    document.getElementById('resetBtn').classList.add('hidden');
+                    resetBtn.classList.add('hidden');
                 }
             });
         }
 
-        // Load initial log
         updateLog();
     </script>
 </body>
