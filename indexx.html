@@ -42,117 +42,118 @@
     </div>
 
     <script>
-        let html5QrCode;
-        const startBtn = document.getElementById('startBtn');
-        const resetBtn = document.getElementById('resetBtn');
+       let html5QrCode;
+let isProcessing = false; // Flag to prevent multiple scans
 
-        function initScanner() {
-            html5QrCode = new Html5Qrcode("reader");
-            startScanning();
-        }
+const startBtn = document.getElementById('startBtn');
+const resetBtn = document.getElementById('resetBtn');
 
-        function startScanning() {
-            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-            
-            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
-                .then(() => {
-                    startBtn.classList.add('hidden');
-                })
-                .catch(err => {
-                    console.error("Camera Error:", err);
-                    Swal.fire('Camera Error', 'Please check permissions and use HTTPS.', 'error');
-                });
-        }
+function initScanner() {
+    html5QrCode = new Html5Qrcode("reader");
+    const config = { 
+        fps: 10, 
+        qrbox: { width: 250, height: 250 },
+        aspectRatio: 1.0 
+    };
 
-        async function onScanSuccess(decodedText) {
-            // 1. Immediately pause/stop the scanner to prevent multiple triggers
-            try {
-                await html5QrCode.stop();
-            } catch (err) {
-                console.warn("Scanner stop failed", err);
-            }
+    html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+        .then(() => {
+            startBtn.classList.add('hidden');
+        })
+        .catch(err => {
+            Swal.fire('Camera Error', 'Ensure you are on HTTPS and allow camera access.', 'error');
+        });
+}
 
-            let data = JSON.parse(localStorage.getItem('member_db')) || [];
-            const exists = data.find(m => m.id === decodedText);
+function onScanSuccess(decodedText) {
+    // If we are already showing a modal, ignore new scans
+    if (isProcessing) return;
+    
+    isProcessing = true; // Lock the scanner logic
 
-            if (exists) {
-                await Swal.fire({
-                    icon: 'warning',
-                    title: 'Already Issued',
-                    text: `Card ${decodedText} was issued on ${exists.timestamp}`,
-                    confirmButtonText: 'Scan Next',
-                    confirmButtonColor: '#4f46e5'
-                });
-            } else {
-                // Save Entry
-                const entry = {
-                    id: decodedText,
-                    timestamp: new Date().toLocaleString()
-                };
-                data.push(entry);
-                localStorage.setItem('member_db', JSON.stringify(data));
-                updateLog();
+    let data = JSON.parse(localStorage.getItem('member_db')) || [];
+    const exists = data.find(m => m.id === decodedText);
 
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Card Registered',
-                    text: `ID: ${decodedText}`,
-                    confirmButtonText: 'Scan Next',
-                    confirmButtonColor: '#10b981'
-                });
-            }
-
-            // 2. Show the "Start Camera" button again or auto-resume
-            // Here we make the button visible again so the user controls when to scan the next card
-            startBtn.innerText = "Scan Next Card";
-            startBtn.classList.remove('hidden');
-            startBtn.classList.replace('bg-indigo-600', 'bg-blue-500');
-        }
-
-        function updateLog() {
-            const data = JSON.parse(localStorage.getItem('member_db')) || [];
-            const container = document.getElementById('scans');
-            container.innerHTML = data.slice().reverse().map(m => `
-                <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-100">
-                    <span class="font-mono font-bold text-indigo-900">${m.id}</span>
-                    <span class="text-[10px] text-slate-400 font-medium">${m.timestamp}</span>
-                </div>
-            `).join('');
-        }
-
-        function exportData() {
-            const data = JSON.parse(localStorage.getItem('member_db')) || [];
-            if (data.length === 0) return Swal.fire('No Data', 'Scan some cards first!', 'info');
-
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "Members");
-            
-            const fName = `Membership_List_${Date.now()}.xlsx`;
-            XLSX.writeFile(wb, fName);
-
-            window.open(`https://wa.me/?text=Membership Export Attached: ${fName}`, '_blank');
-            resetBtn.classList.remove('hidden');
-        }
-
-        function clearStorage() {
-            Swal.fire({
-                title: 'Reset Everything?',
-                text: "All local data will be deleted.",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                confirmButtonText: 'Yes, Delete'
-            }).then((res) => {
-                if (res.isConfirmed) {
-                    localStorage.removeItem('member_db');
-                    updateLog();
-                    resetBtn.classList.add('hidden');
-                }
-            });
-        }
-
+    if (exists) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'Already Issued',
+            html: `<div class="p-2 bg-orange-50 rounded">
+                    <p class="font-bold text-lg">${decodedText}</p>
+                    <p class="text-sm">Issued: ${exists.timestamp}</p>
+                   </div>`,
+            confirmButtonText: 'Scan Next',
+            confirmButtonColor: '#4f46e5'
+        }).then(() => {
+            isProcessing = false; // Unlock after user clicks button
+        });
+    } else {
+        const entry = {
+            id: decodedText,
+            timestamp: new Date().toLocaleString()
+        };
+        data.push(entry);
+        localStorage.setItem('member_db', JSON.stringify(data));
         updateLog();
+
+        Swal.fire({
+            icon: 'success',
+            title: 'Card Registered',
+            text: `ID: ${decodedText}`,
+            confirmButtonText: 'Scan Next',
+            confirmButtonColor: '#10b981'
+        }).then(() => {
+            isProcessing = false; // Unlock after user clicks button
+        });
+    }
+}
+
+function updateLog() {
+    const data = JSON.parse(localStorage.getItem('member_db')) || [];
+    const container = document.getElementById('scans');
+    container.innerHTML = data.slice().reverse().slice(0, 5).map(m => `
+        <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+            <span class="font-mono font-bold text-indigo-900">${m.id}</span>
+            <span class="text-[10px] text-slate-400 font-medium">${m.timestamp}</span>
+        </div>
+    `).join('');
+}
+
+function exportData() {
+    const data = JSON.parse(localStorage.getItem('member_db')) || [];
+    if (data.length === 0) return Swal.fire('No Data', 'Scan some cards first!', 'info');
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Members");
+    
+    const fName = `Membership_List_${Date.now()}.xlsx`;
+    XLSX.writeFile(wb, fName);
+
+    // Provide WhatsApp link
+    window.open(`https://wa.me/?text=Membership Export Generated: ${fName}`, '_blank');
+    resetBtn.classList.remove('hidden');
+}
+
+function clearStorage() {
+    Swal.fire({
+        title: 'Reset Everything?',
+        text: "This will permanently delete the local storage logs.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        confirmButtonText: 'Yes, Delete'
+    }).then((res) => {
+        if (res.isConfirmed) {
+            localStorage.removeItem('member_db');
+            updateLog();
+            resetBtn.classList.add('hidden');
+        }
+    });
+}
+
+// Initial display of data
+updateLog();
     </script>
 </body>
 </html>
