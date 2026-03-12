@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <title>QR Membership System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+<body class="bg-slate-50 min-h-screen p-4">
+
+    <div class="max-w-md mx-auto bg-white rounded-3xl shadow-xl overflow-hidden border border-slate-200">
+        <div class="bg-indigo-600 p-6 text-white text-center">
+            <h1 class="text-2xl font-extrabold tracking-tight">Member Scanner</h1>
+            <p class="text-indigo-100 text-sm">Secure Card Issuing System</p>
+        </div>
+
+        <div class="p-5">
+            <div id="reader" class="overflow-hidden rounded-2xl bg-black mb-4"></div>
+            
+            <div id="controls" class="space-y-3">
+                <button id="startBtn" onclick="initScanner()" class="w-full bg-indigo-600 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-transform">
+                    Allow & Start Camera
+                </button>
+
+                <button onclick="exportData()" class="w-full bg-emerald-500 text-white font-bold py-4 rounded-2xl shadow-lg active:scale-95 transition-transform">
+                    Export to Excel & WhatsApp
+                </button>
+
+                <button id="resetBtn" onclick="clearStorage()" class="hidden w-full bg-white text-red-500 border-2 border-red-100 font-bold py-3 rounded-2xl">
+                    Reset All Data
+                </button>
+            </div>
+        </div>
+
+        <div class="p-5 bg-slate-50 border-t border-slate-100">
+            <h3 class="text-slate-500 font-bold text-xs uppercase tracking-widest mb-3">Recent Activity</h3>
+            <div id="scans" class="space-y-2 text-sm max-h-48 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        let html5QrCode;
+
+        function initScanner() {
+            // User gesture triggered this
+            html5QrCode = new Html5Qrcode("reader");
+            const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+            // facingMode: "environment" forces the back camera
+            html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess)
+                .then(() => {
+                    document.getElementById('startBtn').classList.add('hidden');
+                })
+                .catch(err => {
+                    Swal.fire('Camera Error', 'Make sure you are using HTTPS and have granted permissions.', 'error');
+                });
+        }
+
+        function onScanSuccess(decodedText) {
+            let data = JSON.parse(localStorage.getItem('member_db')) || [];
+            
+            // Check for duplicate
+            const exists = data.find(m => m.id === decodedText);
+            if (exists) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Already Issued',
+                    text: `Card ${decodedText} was issued on ${exists.timestamp}`,
+                    confirmButtonColor: '#4f46e5'
+                });
+                return;
+            }
+
+            // Save Entry
+            const entry = {
+                id: decodedText,
+                timestamp: new Date().toLocaleString()
+            };
+            data.push(entry);
+            localStorage.setItem('member_db', JSON.stringify(data));
+            
+            updateLog();
+            Swal.fire({ toast: true, position: 'top', icon: 'success', title: 'Member Added', showConfirmButton: false, timer: 1500 });
+        }
+
+        function updateLog() {
+            const data = JSON.parse(localStorage.getItem('member_db')) || [];
+            const container = document.getElementById('scans');
+            container.innerHTML = data.slice().reverse().map(m => `
+                <div class="flex justify-between items-center bg-white p-3 rounded-xl shadow-sm border border-slate-100">
+                    <span class="font-mono font-bold text-indigo-900">${m.id}</span>
+                    <span class="text-[10px] text-slate-400 font-medium">${m.timestamp}</span>
+                </div>
+            `).join('');
+        }
+
+        function exportData() {
+            const data = JSON.parse(localStorage.getItem('member_db')) || [];
+            if (data.length === 0) return Swal.fire('No Data', 'Scan some cards first!', 'info');
+
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Members");
+            
+            const fName = `Membership_List_${Date.now()}.xlsx`;
+            XLSX.writeFile(wb, fName);
+
+            // WhatsApp link (Browser requires manual file attachment)
+            window.open(`https://wa.me/?text=Membership Export: ${fName}`, '_blank');
+            document.getElementById('resetBtn').classList.remove('hidden');
+        }
+
+        function clearStorage() {
+            Swal.fire({
+                title: 'Reset Everything?',
+                text: "All local data will be deleted.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ef4444',
+                confirmButtonText: 'Yes, Delete'
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    localStorage.removeItem('member_db');
+                    updateLog();
+                    document.getElementById('resetBtn').classList.add('hidden');
+                }
+            });
+        }
+
+        // Load initial log
+        updateLog();
+    </script>
+</body>
+</html>
